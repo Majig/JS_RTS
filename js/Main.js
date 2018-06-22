@@ -44,6 +44,17 @@ window.onload = function () {
 
   canvas.addEventListener("mouseup", function (evt) {
     isMouseDragging = false;
+
+    selectedUnits = [];
+
+    for (var i = 0; i < playerUnits.length; i++) {
+      if (playerUnits[i].isInBox(lassoX1, lassoY1, lassoX2, lassoY2)) {
+        console.log("Main: selectedUnits.push(playerUnits[" + i + "]");
+        selectedUnits.push(playerUnits[i]);
+      }
+    }
+
+    document.getElementById("debugText").innerHTML = "Selected " + selectedUnits.length + " units";
   });
 
   canvas.addEventListener("mousedown", function (evt) {
@@ -84,8 +95,13 @@ function moveEverything() {
 
 function drawEverything() {
   colorRect(0, 0, canvas.width, canvas.height, "black");
+
   for (var i = 0; i < playerUnits.length; i++) {
     playerUnits[i].draw();
+  }
+
+  for (var i = 0; i < selectedUnits.length; i++) {
+    selectedUnits[i].drawSelectionBox();
   }
 
   if (isMouseDragging) {
