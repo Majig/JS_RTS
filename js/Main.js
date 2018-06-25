@@ -1,5 +1,5 @@
 // player properties
-const PLAYER_START_UNITS = 8;
+const PLAYER_START_UNITS = 20;
 var playerUnits = [];
 var selectedUnits = [];
 
@@ -51,8 +51,9 @@ window.onload = function () {
         selectedUnits.length + " units";
     } else {
       var mousePos = calculateMousePos(evt);
+      var unitsAlongSide = Math.floor(Math.sqrt(selectedUnits.length + 0));
       for (var i = 0; i < selectedUnits.length; i++) {
-        selectedUnits[i].gotoNear(mousePos.x, mousePos.y);
+        selectedUnits[i].gotoNear(mousePos.x, mousePos.y, i, unitsAlongSide);
       }
       document.getElementById("debugText").innerHTML = "Moving to (" + 
         mousePos.x + ", " + mousePos.y + ")";
