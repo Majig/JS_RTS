@@ -4,6 +4,7 @@ var playerUnits = [];
 var selectedUnits = [];
 
 // lasso properties
+const MIN_DIST_TO_COUNT_DRAG = 10;
 var lassoX1 = 0;
 var lassoX2 = 0;
 var lassoY1 = 0;
@@ -35,26 +36,27 @@ window.onload = function () {
     drawEverything();
   }, 1000 / FPS);
 
-  // canvas.addEventListener("click", function (evt) {
-  //   var mousePos = calculateMousePos(evt);
-  //   for (var i = 0; i < playerUnits.length; i++) {
-  //     playerUnits[i].gotoNear(mousePos.x, mousePos.y);
-  //   }
-  // });
-
   canvas.addEventListener("mouseup", function (evt) {
     isMouseDragging = false;
 
-    selectedUnits = [];
+    if (mouseMovedEnoughToTreatAsDrag()) {
+      selectedUnits = [];
 
-    for (var i = 0; i < playerUnits.length; i++) {
-      if (playerUnits[i].isInBox(lassoX1, lassoY1, lassoX2, lassoY2)) {
-        console.log("Main: selectedUnits.push(playerUnits[" + i + "]");
-        selectedUnits.push(playerUnits[i]);
+      for (var i = 0; i < playerUnits.length; i++) {
+        if (playerUnits[i].isInBox(lassoX1, lassoY1, lassoX2, lassoY2)) {
+          selectedUnits.push(playerUnits[i]);
+        }
       }
+      document.getElementById("debugText").innerHTML = "Selected " + 
+        selectedUnits.length + " units";
+    } else {
+      var mousePos = calculateMousePos(evt);
+      for (var i = 0; i < selectedUnits.length; i++) {
+        selectedUnits[i].gotoNear(mousePos.x, mousePos.y);
+      }
+      document.getElementById("debugText").innerHTML = "Moving to (" + 
+        mousePos.x + ", " + mousePos.y + ")";
     }
-
-    document.getElementById("debugText").innerHTML = "Selected " + selectedUnits.length + " units";
   });
 
   canvas.addEventListener("mousedown", function (evt) {
@@ -72,8 +74,6 @@ window.onload = function () {
   canvas.addEventListener('mousemove', function (evt) {
     var mousePos = calculateMousePos(evt);
 
-    // document.getElementById("debugText").innerHTML = "x: " + mousePos.x + " y: " + mousePos.y;
-
     if (isMouseDragging) {
       lassoX2 = mousePos.x;
       lassoY2 = mousePos.y;
@@ -85,6 +85,14 @@ window.onload = function () {
     spawnUnit.reset();
     playerUnits.push(spawnUnit);
   }
+}
+
+function mouseMovedEnoughToTreatAsDrag() {
+  var deltaX = lassoX1 - lassoX2;
+  var deltaY = lassoY1 - lassoY2;
+  var dragDist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  return (dragDist > MIN_DIST_TO_COUNT_DRAG);
 }
 
 function moveEverything() {
@@ -105,6 +113,6 @@ function drawEverything() {
   }
 
   if (isMouseDragging) {
-    coloredOutlineRectCornerToCorner(lassoX1, lassoY1, lassoX2,lassoY2, "yellow");
+    coloredOutlineRectCornerToCorner(lassoX1, lassoY1, lassoX2, lassoY2, "yellow");
   }
 }

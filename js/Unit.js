@@ -32,6 +32,7 @@ function unitClass() {
     }
 
     this.gotoNear = function (aroundX, aroundY) {
+        console.log("Units: gotoNear(" + aroundX + ", " + aroundY + ")");
         this.gotoX = aroundX + Math.random() * UNIT_MAX_RAND_DIST_FROM_WALK_TARGET;
         this.gotoY = aroundY + Math.random() * UNIT_MAX_RAND_DIST_FROM_WALK_TARGET;
     }
