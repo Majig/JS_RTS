@@ -1,30 +1,7 @@
-// player properties
-const PLAYER_START_UNITS = 20;
-var playerUnits = [];
 var selectedUnits = [];
 
-// lasso properties
-const MIN_DIST_TO_COUNT_DRAG = 10;
-var lassoX1 = 0;
-var lassoX2 = 0;
-var lassoY1 = 0;
-var lassoY2 = 0;
-var isMouseDragging = false;
-
-// save the canvas for dimensions, and its 2d context for drawing to it
+// canvas and context
 var canvas, canvasContext;
-
-function calculateMousePos(evt) {
-  var rect = canvas.getBoundingClientRect(), root = document.documentElement;
-
-  // account for the marings, canvas position on page, scroll amount, etc.
-  var mouseX = evt.clientX - rect.left - root.scrollLeft;
-  var mouseY = evt.clientY - rect.top - root.scrollTop;
-  return {
-    x: mouseX,
-    y: mouseY
-  };
-}
 
 window.onload = function () {
   canvas = document.getElementById('gameCanvas');
@@ -36,77 +13,28 @@ window.onload = function () {
     drawEverything();
   }, 1000 / FPS);
 
-  canvas.addEventListener("mouseup", function (evt) {
-    isMouseDragging = false;
+  canvas.addEventListener("mousemove", mousemoveHandler);
+  canvas.addEventListener("mousedown", mousedownHandler);
+  canvas.addEventListener("mouseup", mouseupHandler);
 
-    if (mouseMovedEnoughToTreatAsDrag()) {
-      selectedUnits = [];
-
-      for (var i = 0; i < playerUnits.length; i++) {
-        if (playerUnits[i].isInBox(lassoX1, lassoY1, lassoX2, lassoY2)) {
-          selectedUnits.push(playerUnits[i]);
-        }
-      }
-      document.getElementById("debugText").innerHTML = "Selected " + 
-        selectedUnits.length + " units";
-    } else {
-      var mousePos = calculateMousePos(evt);
-      var unitsAlongSide = Math.floor(Math.sqrt(selectedUnits.length + 0));
-      for (var i = 0; i < selectedUnits.length; i++) {
-        selectedUnits[i].gotoNear(mousePos.x, mousePos.y, i, unitsAlongSide);
-      }
-      document.getElementById("debugText").innerHTML = "Moving to (" + 
-        mousePos.x + ", " + mousePos.y + ")";
-    }
-  });
-
-  canvas.addEventListener("mousedown", function (evt) {
-    var mousePos = calculateMousePos(evt);
-
-    lassoX1 = mousePos.x;
-    lassoY1 = mousePos.y;
-
-    lassoX2 = lassoX1;
-    lassoY2 = lassoY1;
-
-    isMouseDragging = true;
-  });
-
-  canvas.addEventListener('mousemove', function (evt) {
-    var mousePos = calculateMousePos(evt);
-
-    if (isMouseDragging) {
-      lassoX2 = mousePos.x;
-      lassoY2 = mousePos.y;
-    }
-  });
-
-  for (var i = 0; i < PLAYER_START_UNITS; i++) {
-    var spawnUnit = new unitClass();
-    spawnUnit.reset();
-    playerUnits.push(spawnUnit);
-  }
-}
-
-function mouseMovedEnoughToTreatAsDrag() {
-  var deltaX = lassoX1 - lassoX2;
-  var deltaY = lassoY1 - lassoY2;
-  var dragDist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-  return (dragDist > MIN_DIST_TO_COUNT_DRAG);
+  populateTeam(playerUnits, PLAYER_START_UNITS, true);
+  populateTeam(enemyUnits, ENEMY_START_UNITS, false);
 }
 
 function moveEverything() {
-  for (var i = 0; i < playerUnits.length; i++) {
-    playerUnits[i].move();
+  for (var i = 0; i < allUnits.length; i++) {
+    allUnits[i].move();
   }
+
+  removeDeadUnits();
+  checkAndHandleVictory();
 }
 
 function drawEverything() {
   colorRect(0, 0, canvas.width, canvas.height, "black");
 
-  for (var i = 0; i < playerUnits.length; i++) {
-    playerUnits[i].draw();
+  for (var i = 0; i < allUnits.length; i++) {
+    allUnits[i].draw();
   }
 
   for (var i = 0; i < selectedUnits.length; i++) {

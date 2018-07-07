@@ -3,7 +3,9 @@ const UNIT_PLACEHOLDER_RADIUS = 5;
 const UNIT_SELECT_DIM_HALF = UNIT_PLACEHOLDER_RADIUS + 3;
 const UNIT_RANKS_SPACING = UNIT_PLACEHOLDER_RADIUS * 3;
 const UNIT_PIXELS_MOVE_RATE = 2;
-// const UNIT_MAX_RAND_DIST_FROM_WALK_TARGET = 60; // obsolete
+const UNIT_ATTACK_RANGE = 55;
+const UNIT_AI_ATTACK_INITIATE = UNIT_ATTACK_RANGE + 10;
+const UNIT_PLAYABLE_AREA_MARGIN = 20;
 
 function unitClass() {
 
@@ -11,12 +13,61 @@ function unitClass() {
         this.x = Math.random() * canvas.width / 4;
         this.y = Math.random() * canvas.height / 4;
         this.isDead = false;
+        this.myTarget = null;
 
         this.gotoX = this.x;
         this.gotoY = this.y;
     }
 
-    this.move = function () {
+    this.resetAndSetPlayerTeam = function (playerTeam) {
+        this.playerControlled = playerTeam;
+        this.x = Math.random() * canvas.width / 4;
+        this.y = Math.random() * canvas.height / 4;
+
+        if (this.playerControlled == false) {
+            this.x = canvas.width - this.x;
+            this.y = canvas.height - this.y;
+            this.unitColor = "red";
+        } else {
+            this.unitColor = "white";
+        }
+
+        this.gotoX = this.x;
+        this.gotoY = this.y;
+        this.isDead = false;
+    }
+
+    this.move = function () {        
+        if (this.myTarget != null) {
+            if (this.myTarget.isDead) {
+                this.myTarget = null;
+                this.gotoX = this.x;
+                this.gotoY = this.y;
+            } else if (this.distFrom(this.myTarget.x, this.myTarget.y) > UNIT_ATTACK_RANGE) {
+                this.gotoX = this.myTarget.x;
+                this.gotoY = this.myTarget.y;
+            } else {
+                this.myTarget.isDead = true;
+                soonCheckUnitsToClear();
+                this.gotoX = this.x;
+                this.gotoY = this.y;
+            }
+        } else if (this.playerControlled == false) {
+            if (Math.random() < 0.02) {
+                var nearestOpponentFound = 
+                findClosestUnitInRange(this.x, this.y, UNIT_AI_ATTACK_INITIATE, playerUnits);
+
+                if (nearestOpponentFound != null) {
+                    this.newTarget(nearestOpponentFound);
+                } else {
+                    this.gotoX = this.x - Math.random() * 70;
+                    this.gotoY = this.y - Math.random() * 70;
+                }
+            }
+        }
+
+        this.keepInPlayableArea();
+        
         var deltaX = this.gotoX - this.x;
         var deltaY = this.gotoY - this.y;
         var distToGo = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -32,12 +83,30 @@ function unitClass() {
         }
     }
 
+    this.keepInPlayableArea = function () {
+        if (this.gotoX < UNIT_PLAYABLE_AREA_MARGIN) {
+            this.gotoX = UNIT_PLAYABLE_AREA_MARGIN;
+        } else if (this.gotoX > canvas.width - UNIT_PLAYABLE_AREA_MARGIN) {
+            this.gotoX = canvas.width - UNIT_PLAYABLE_AREA_MARGIN;
+        }
+
+        if (this.gotoY < UNIT_PLAYABLE_AREA_MARGIN) {
+            this.gotoY = UNIT_PLAYABLE_AREA_MARGIN;
+        } else if (this.gotoY > canvas.height - UNIT_PLAYABLE_AREA_MARGIN) {
+            this.gotoY = canvas.height - UNIT_PLAYABLE_AREA_MARGIN;
+        }
+    }
+
     this.gotoNear = function (aroundX, aroundY, formationPos, formationDim) {
         var colNum = formationPos % formationDim;
         var rowNum = Math.floor(formationPos / formationDim);
         
         this.gotoX = aroundX + colNum * UNIT_RANKS_SPACING;
         this.gotoY = aroundY + rowNum * UNIT_RANKS_SPACING;
+    }
+
+    this.newTarget = function (newTarget) {
+        this.myTarget = newTarget;
     }
 
     this.isInBox = function (x1, y1, x2, y2) {
@@ -76,6 +145,12 @@ function unitClass() {
         return true;
     }
 
+    this.distFrom = function (otherX, otherY) {
+        var deltaX = otherX - this.x;
+        var deltaY = otherY - this.y;
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    }
+
     this.drawSelectionBox = function () {
         coloredOutlineRectCornerToCorner(   this.x - UNIT_SELECT_DIM_HALF,
                                             this.y - UNIT_SELECT_DIM_HALF,
@@ -84,9 +159,7 @@ function unitClass() {
     }
 
     this.draw = function () {
-        if (!this.isDead) {
-            colorCircle(this.x, this.y, UNIT_PLACEHOLDER_RADIUS, "white");
-        }
+        colorCircle(this.x, this.y, UNIT_PLACEHOLDER_RADIUS, this.unitColor);
     }
 
 } // end of unitClass ()
